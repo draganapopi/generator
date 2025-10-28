@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
+}
+
+body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
+
+/* Custom placeholder styles for better contrast */
+@layer base {
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #666666;
+        /* darker gray for better readability */
+        opacity: 1;
+    }
+
+    input:focus::placeholder,
+    textarea:focus::placeholder {
+        color: #666666;
+        /* same dark gray when focused */
+        opacity: 0.6;
+    }
+
+    /* Select dropdown text color */
+    select {
+        color: #666666;
+    }
+
+    select option {
+        color: #666666;
+    }
+}
