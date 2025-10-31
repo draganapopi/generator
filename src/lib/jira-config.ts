@@ -5,7 +5,7 @@ import { JiraConfig } from './jira-client';
 export const JIRA_CONFIG: JiraConfig = {
     url: process.env.JIRA_URL || 'https://midoceanbrands.atlassian.net',
     email: process.env.JIRA_EMAIL || 'd.popi@levi9.com',
-    token: process.env.JIRA_TOKEN || 'ATATT3xFfGF0sIWx6UL-48ZgqVdRjwak2dSbHHTj50Qv_b16EI0mXEQ3OVDYxnW_vf-Da4rie_iPdCapi6_hja5yRWxHl8bo5EQWhEUchWR9xNbYXroFp9GUzRfd9Jw-7HRlO1MlbpOo4HcSTUrMD8swm-fYoWgKbe0BAkBZCLWsBLADz-P1ubY=1EF0D65A',
+    token: process.env.JIRA_TOKEN || '',
     defaultBoardId: process.env.JIRA_BOARD_ID || 28, // Board ID iz URL-a
     projectKey: 'MTO' // Project key iz URL-a
 };
