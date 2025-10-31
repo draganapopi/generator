@@ -16,7 +16,7 @@ export default function Home() {
         setIsGenerating(true)
 
         try {
-            const response = await fetch(`/api/generate-test-cases`, {
+            const response = await fetch(`/api/show-test-cases`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

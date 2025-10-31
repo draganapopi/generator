@@ -4,18 +4,16 @@ import { mockTickets } from '@/lib/test-case-generator'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ boardId: string }> }
+    { params }: { params: Promise<{ boardId: string; sprintId: string }> }
 ) {
     try {
-        const { boardId } = await params
-        const { searchParams } = new URL(request.url)
-        const activeOnly = searchParams.get('activeOnly')
+        const { boardId, sprintId } = await params
 
         if (!isJiraConfigured()) {
             // Return mock data for development
             return NextResponse.json({
                 success: true,
-                tickets: mockTickets.slice(0, 10), // Return more mock data for board view
+                tickets: mockTickets.slice(0, 5), // Return subset of mock data
                 total: mockTickets.length,
                 source: 'mock'
             })
@@ -25,23 +23,23 @@ export async function GET(
         if (!jiraClient) {
             return NextResponse.json({
                 success: false,
-                error: 'Jira client not available'
+                error: 'Failed to initialize Jira client'
             }, { status: 500 })
         }
 
-        const result = await jiraClient.getBoardTickets(boardId)
+        const result = await jiraClient.getSprintTickets(sprintId, boardId)
 
         return NextResponse.json({
             ...result,
             source: 'jira'
         })
     } catch (error) {
-        console.error('Error in board tickets endpoint:', error)
+        console.error('Error fetching sprint tickets:', error)
 
         return NextResponse.json(
             {
                 success: false,
-                error: 'Failed to fetch board tickets',
+                error: 'Failed to fetch sprint tickets',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }

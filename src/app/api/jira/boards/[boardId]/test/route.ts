@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getJiraClient, isJiraConfigured } from '@/lib/jira-config'
-import { mockTickets } from '@/lib/test-case-generator'
 
 export async function GET(
     request: NextRequest,
@@ -8,40 +7,36 @@ export async function GET(
 ) {
     try {
         const { boardId } = await params
-        const { searchParams } = new URL(request.url)
-        const activeOnly = searchParams.get('activeOnly')
 
         if (!isJiraConfigured()) {
-            // Return mock data for development
             return NextResponse.json({
-                success: true,
-                tickets: mockTickets.slice(0, 10), // Return more mock data for board view
-                total: mockTickets.length,
-                source: 'mock'
-            })
+                success: false,
+                error: 'Jira not configured'
+            }, { status: 400 })
         }
 
         const jiraClient = await getJiraClient()
         if (!jiraClient) {
             return NextResponse.json({
                 success: false,
-                error: 'Jira client not available'
+                error: 'Failed to initialize Jira client'
             }, { status: 500 })
         }
 
-        const result = await jiraClient.getBoardTickets(boardId)
+        const result = await jiraClient.testBoardAccess(boardId)
 
-        return NextResponse.json({
-            ...result,
-            source: 'jira'
-        })
+        if (!result.success) {
+            return NextResponse.json(result, { status: 500 })
+        }
+
+        return NextResponse.json(result)
     } catch (error) {
-        console.error('Error in board tickets endpoint:', error)
+        console.error('Error testing board access:', error)
 
         return NextResponse.json(
             {
                 success: false,
-                error: 'Failed to fetch board tickets',
+                error: 'Failed to test board access',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }

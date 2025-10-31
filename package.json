@@ -3,12 +3,10 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev",
+        "dev": "next dev --port 3003",
         "build": "next build",
-        "start": "next start",
-        "lint": "next lint",
-        "server": "node server/index.js",
-        "dev:full": "concurrently \"npm run dev\" \"npm run server\""
+        "start": "next start --port 3003",
+        "lint": "next lint"
     },
     "dependencies": {
         "next": "15.0.3",
@@ -22,12 +20,6 @@
         "postcss": "^8.4.47",
         "autoprefixer": "^10.4.20",
         "axios": "^1.7.7",
-        "express": "^4.21.1",
-        "cors": "^2.8.5",
-        "socket.io": "^4.8.1",
-        "socket.io-client": "^4.8.1",
-        "@types/express": "^5.0.0",
-        "@types/cors": "^2.8.17",
         "yaml": "^2.6.0",
         "lodash": "^4.17.21",
         "@types/lodash": "^4.17.13",
@@ -37,8 +29,6 @@
     },
     "devDependencies": {
         "eslint": "^8.57.1",
-        "eslint-config-next": "15.0.3",
-        "concurrently": "^9.0.1",
-        "nodemon": "^3.1.7"
+        "eslint-config-next": "15.0.3"
     }
 }
