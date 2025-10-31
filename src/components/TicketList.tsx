@@ -7,14 +7,17 @@ interface TicketListProps {
     onTicketSelect: (ticket: JiraTicket) => void;
     selectedTicket: JiraTicket | null;
     boardId?: number | null;
+    finalizedTickets?: Set<string>; // ticket keys where all test cases approved/rejected
+    generatedTickets?: Set<string>; // ticket keys that have any generated test cases
 }
 
-export function TicketList({ onTicketSelect, selectedTicket, boardId }: TicketListProps) {
+export function TicketList({ onTicketSelect, selectedTicket, boardId, finalizedTickets, generatedTickets }: TicketListProps) {
     const [tickets, setTickets] = useState<JiraTicket[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterType, setFilterType] = useState<string>('all')
+    const [testStatusFilter, setTestStatusFilter] = useState<'all' | 'finalized' | 'generated' | 'none'>('all')
     const [dataSource, setDataSource] = useState<'mock' | 'jira'>('mock')
 
     useEffect(() => {
@@ -48,10 +51,18 @@ export function TicketList({ onTicketSelect, selectedTicket, boardId }: TicketLi
     const filteredTickets = tickets.filter(ticket => {
         const matchesSearch = ticket.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
             ticket.key.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesTypeFilter = filterType === 'all' || ticket.issueType.toLowerCase() === filterType.toLowerCase()
 
-        const matchesFilter = filterType === 'all' || ticket.issueType.toLowerCase() === filterType.toLowerCase()
-
-        return matchesSearch && matchesFilter
+        let matchesTestStatus = true
+        if (testStatusFilter === 'finalized') {
+            matchesTestStatus = !!finalizedTickets?.has(ticket.key)
+        } else if (testStatusFilter === 'generated') {
+            matchesTestStatus = !finalizedTickets?.has(ticket.key) && !!generatedTickets?.has(ticket.key)
+        } else if (testStatusFilter === 'none') {
+            const hasGenerated = generatedTickets?.has(ticket.key)
+            matchesTestStatus = !hasGenerated
+        }
+        return matchesSearch && matchesTypeFilter && matchesTestStatus
     })
 
     const getPriorityColor = (priority: string) => {
@@ -182,6 +193,20 @@ export function TicketList({ onTicketSelect, selectedTicket, boardId }: TicketLi
                         <option value="epic">Epic</option>
                     </select>
                 </div>
+
+                <div>
+                    <select
+                        value={testStatusFilter}
+                        onChange={(e) => setTestStatusFilter(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+                        style={{ color: '#666666' }}
+                    >
+                        <option value="all">All Test Statuses</option>
+                        <option value="finalized">TESTS FINALIZED</option>
+                        <option value="generated">TESTS GENERATED</option>
+                        <option value="none">NOT GENERATED</option>
+                    </select>
+                </div>
             </div>
 
             {/* Tickets List */}
@@ -208,6 +233,11 @@ export function TicketList({ onTicketSelect, selectedTicket, boardId }: TicketLi
                                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ticket.status)}`}>
                                             {ticket.status}
                                         </span>
+                                        {finalizedTickets?.has(ticket.key) && (
+                                            <span className="px-2 py-1 text-xs rounded-full bg-green-600 text-white" title="All test cases finalized">
+                                                TESTS FINALIZED
+                                            </span>
+                                        )}
                                     </div>
 
                                     <h3 className="text-sm font-medium text-gray-800 mb-1">

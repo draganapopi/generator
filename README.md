@@ -1,6 +1,6 @@
 # Jira Test Case Generator UI
 
-A modern web application for automatically generating test cases from Jira tickets using Gherkin acceptance criteria parsing.
+A modern fullstack web application for automatically generating test cases from Jira tickets using Gherkin acceptance criteria parsing.
 
 ## 🚀 Features
 
@@ -13,38 +13,42 @@ A modern web application for automatically generating test cases from Jira ticke
 
 ## 🏗️ Architecture
 
-### Frontend (Next.js + React + TypeScript)
-- **Framework**: Next.js 15 with App Router
+### Fullstack Next.js Application
+- **Framework**: Next.js 15 with App Router (Frontend + Backend)
+- **Frontend**: React + TypeScript with Tailwind CSS
+- **Backend**: Next.js API Routes (replacing Express.js)
 - **Styling**: Tailwind CSS for responsive design
 - **State Management**: React hooks for local state
-- **Type Safety**: Full TypeScript implementation
-
-### Backend (Express.js + Node.js)
-- **API Server**: Express.js REST API on port 3001
-- **Gherkin Parser**: Custom parser for acceptance criteria
-- **Test Generation**: Intelligent test case creation engine
-- **Mock Data**: Development data for testing UI components
+- **Type Safety**: Full TypeScript implementation throughout
 
 ## 📁 Project Structure
 
 ```
 ├── src/
-│   ├── app/                 # Next.js App Router pages
-│   │   ├── globals.css      # Global styles
-│   │   ├── layout.tsx       # Root layout component
-│   │   └── page.tsx         # Main application page
-│   ├── components/          # React components
-│   │   ├── Header.tsx       # Application header
-│   │   ├── TicketList.tsx   # Jira tickets display
+│   ├── app/                 # Next.js App Router
+│   │   ├── api/            # API Routes (Backend)
+│   │   │   ├── generate-test-cases/  # Test case generation endpoint
+│   │   │   ├── jira/       # Jira integration endpoints
+│   │   │   ├── tickets/    # Tickets management
+│   │   │   ├── health/     # Health check
+│   │   │   └── debug-ticket/ # Debugging endpoint
+│   │   ├── globals.css     # Global styles
+│   │   ├── layout.tsx      # Root layout component
+│   │   └── page.tsx        # Main application page
+│   ├── components/         # React components
+│   │   ├── Header.tsx      # Application header
+│   │   ├── TicketList.tsx  # Jira tickets display
 │   │   └── TestCaseEditor.tsx # Test case editing interface
+│   ├── lib/                # Backend logic
+│   │   ├── jira-client.ts  # Jira API client
+│   │   ├── jira-config.ts  # Jira configuration
+│   │   └── test-case-generator.ts # Test case generation logic
 │   └── types/
-│       └── index.ts         # TypeScript type definitions
-├── server/
-│   └── index.js            # Express.js API server
-├── package.json            # Project dependencies and scripts
-├── tailwind.config.js      # Tailwind CSS configuration
-├── tsconfig.json          # TypeScript configuration
-└── next.config.js         # Next.js configuration
+│       └── index.ts        # TypeScript type definitions
+├── package.json           # Project dependencies and scripts
+├── tailwind.config.js     # Tailwind CSS configuration
+├── tsconfig.json         # TypeScript configuration
+└── next.config.js        # Next.js configuration
 ```
 
 ## 🛠️ Development Setup
@@ -67,48 +71,23 @@ A modern web application for automatically generating test cases from Jira ticke
    npm install
    ```
 
-3. **Start development servers**
+3. **Start development server**
    ```bash
-   # Start both frontend and backend
-   npm run dev:full
-   
-   # Or start them separately:
-   npm run server    # Backend on port 3001
-   npm run dev      # Frontend on port 3003 (or next available)
+   npm run dev
    ```
 
 4. **Open the application**
-   - Frontend: http://localhost:3003
-   - Backend API: http://localhost:3001/api/health
+   - Application: http://localhost:3003
+   - API Health Check: http://localhost:3003/api/health
 
 ## 📋 Available Scripts
 
-- `npm run dev` - Start Next.js development server
-- `npm run server` - Start Express.js API server
-- `npm run dev:full` - Start both frontend and backend concurrently
+- `npm run dev` - Start Next.js development server (Frontend + Backend)
 - `npm run build` - Build production version
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 
 ## 🔗 API Endpoints
-
-### GET /api/tickets
-Retrieve list of Jira tickets
-```json
-{
-  "success": true,
-  "tickets": [...],
-  "total": 42
-}
-```
-
-### POST /api/generate-test-cases
-Generate test cases for a specific ticket
-```json
-{
-  "ticket": { "key": "MTO-1842", ... }
-}
-```
 
 ### GET /api/health
 Health check endpoint
@@ -116,19 +95,67 @@ Health check endpoint
 {
   "status": "ok",
   "timestamp": "2024-10-24T12:00:00.000Z",
-  "service": "Jira Test Case Generator API"
+  "service": "Jira Test Case Generator API (Next.js)"
 }
 ```
+
+### GET /api/tickets
+Retrieve list of Jira tickets
+```json
+{
+  "success": true,
+  "tickets": [...],
+  "total": 42,
+  "source": "jira|mock"
+}
+```
+
+### POST /api/show-test-cases
+Generate test cases for a specific ticket
+```json
+{
+  "ticket": { "key": "MTO-1842", ... }
+}
+```
+
+### Jira Integration Endpoints
+- `GET /api/jira/test-connection` - Test Jira connection
+- `GET /api/jira/boards` - Get available boards
+- `GET /api/jira/boards/{boardId}/tickets` - Get board tickets (active/open items)
+- `POST /api/jira/search` - Search tickets with JQL
+
+Sprint-specific endpoints were removed to simplify the flow; board tickets already include active sprint items.
+
 
 ## 🎯 Usage Workflow
 
 1. **Browse Tickets**: View available Jira tickets in the left panel
-2. **Select Ticket**: Click on a ticket to generate test cases
-3. **Review Generated Cases**: Examine auto-generated test cases in the right panel
-4. **Edit if Needed**: Use the edit functionality to modify test cases
-5. **Approve/Reject**: Mark test cases as approved or rejected
-6. **Export**: Download test cases in your preferred format
+2. **Select Ticket**: Click a ticket to mark it as selected (no auto generation)
+3. **Generate**: Press the "Generate Test Cases" button to call the backend
+4. **Review Generated Cases**: Examine generated test cases in the right panel
+5. **Edit if Needed**: Modify steps, expected results, labels
+6. **Approve/Reject**: Mark test cases as approved or rejected
+7. **Export**: Download test cases in your preferred format
 
+### Test Case Status Persistence
+
+Approved and rejected statuses are persisted locally in the browser via `localStorage` under the key `testCaseStatuses`.
+Structure:
+
+```json
+{
+   "MTO-1842": {
+      "MTO-1842-TC-001": "approved",
+      "MTO-1842-TC-002": "rejected"
+   }
+}
+```
+
+On regeneration, previously finalized test cases keep their status and remain collapsed. Incoming newly generated cases receive any stored status if their IDs match. A backend persistence endpoint can replace this mechanism later.
+
+### Generated Test Cases Persistence
+
+Generated test cases themselves (not samo status) se čuvaju lokalno po ticket ključu u `localStorage` (`generatedTestCases`). Kada ponovo otvoriš aplikaciju i izabereš isti ticket, već generisani test case-ovi se automatski učitavaju (sa svojim odobrenim / odbijenim statusima) tako da ne moraš ponovo da klikneš Generate osim ako želiš novu verziju.
 ## 🧩 Gherkin Parsing
 
 The application automatically parses Gherkin-style acceptance criteria from Jira ticket descriptions:
@@ -155,9 +182,37 @@ This gets converted into structured test cases with:
 
 ## 🔧 Configuration
 
+### Environment Variables (Optional)
+For Jira integration, set these environment variables:
+```bash
+JIRA_URL=https://your-domain.atlassian.net
+JIRA_EMAIL=your-email@company.com
+JIRA_TOKEN=your-jira-api-token
+JIRA_BOARD_ID=your-default-board-id
+```
+
+If not configured, the application will use mock data for development.
+
+### Mock vs Real Jira Data
+
+The UI shows a badge next to the tickets list:
+- `Live Data` (green) = Jira credentials valid, tickets fetched from Jira.
+- `Mock Data` (yellow) = Jira not configured (`JIRA_TOKEN` missing or invalid) and fallback mock tickets are served.
+
+To switch from mock to real:
+1. Obtain a Jira API token (Atlassian Account → Manage Account → Security → API tokens).
+2. Set environment variables in `.env.local`.
+3. Restart the dev server.
+4. Refresh the page; badge should change to `Live Data`.
+
+If the badge stays on mock:
+- Check logs for `Jira client initialized` message.
+- Ensure token isn't empty or copied with whitespace.
+- Verify the email matches the Atlassian account owning the token.
+
 ### Next.js Configuration (next.config.js)
-- API proxy setup for backend communication
 - Build optimization settings
+- TypeScript configuration
 
 ### Tailwind Configuration (tailwind.config.js)
 - Custom color scheme for UI components
@@ -170,17 +225,17 @@ This gets converted into structured test cases with:
 ## 🚀 Deployment
 
 ### Development
-The application is currently set up for development with:
+The application runs as a single Next.js server with:
 - Hot reload for frontend changes
-- Nodemon for backend auto-restart
-- Mock data for testing UI components
+- API routes for backend functionality
+- Mock data when Jira is not configured
 
 ### Production
 For production deployment:
-1. Build the frontend: `npm run build`
-2. Configure environment variables for Jira API
-3. Set up proper CORS policies
-4. Use process manager (PM2) for backend
+1. Build the application: `npm run build`
+2. Configure environment variables for Jira API (optional)
+3. Start production server: `npm run start`
+4. Application runs on port 3003
 
 ## 🤝 Contributing
 
@@ -192,7 +247,6 @@ For production deployment:
 
 ## 📝 Future Enhancements
 
-- [ ] Real Jira API integration
 - [ ] X-Ray test management integration
 - [ ] User authentication and sessions
 - [ ] Bulk test case operations
@@ -205,16 +259,23 @@ For production deployment:
 ### Port Conflicts
 If you encounter port conflicts:
 ```bash
-# Kill processes using ports
+# Kill processes using ports (Windows)
 taskkill /PID <process-id> /F
-# Or use different ports in package.json scripts
+# Or change port in package.json
 ```
 
 ### Build Errors
 Common issues and solutions:
 - TypeScript errors: Check imports and type definitions
 - CSS not loading: Verify Tailwind configuration
-- API connection issues: Ensure backend is running on port 3001
+- Module not found: Check path aliases in tsconfig.json
+
+### Jira Connection Issues
+- Verify environment variables are set correctly (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_TOKEN`).
+- Check network connectivity to Jira instance.
+- Validate API token permissions (needs browse/read rights on the project/board).
+- If failing, temporarily log `error.response?.data` in `jira-client.ts` for more detail.
+- Application gracefully falls back to mock data when Jira is not configured.
 
 ## 📄 License
 

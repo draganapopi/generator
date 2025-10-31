@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { JiraTicket, TestCase, TestStep } from '@/types'
 
 interface TestCaseEditorProps {
@@ -22,6 +22,24 @@ export function TestCaseEditor({
 }: TestCaseEditorProps) {
     const [editingTestCase, setEditingTestCase] = useState<string | null>(null)
     const [editedTestCase, setEditedTestCase] = useState<TestCase | null>(null)
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+    const toggleCollapse = (id: string) => {
+        setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
+    }
+
+    // Auto-collapse after approve or reject
+    useEffect(() => {
+        setCollapsed(prev => {
+            const next = { ...prev }
+            testCases.forEach(tc => {
+                if ((tc.status === 'approved' || tc.status === 'rejected') && next[tc.id] !== true) {
+                    next[tc.id] = true
+                }
+            })
+            return next
+        })
+    }, [testCases])
 
     const handleEdit = (testCase: TestCase) => {
         setEditingTestCase(testCase.id)
@@ -140,219 +158,268 @@ export function TestCaseEditor({
                             </span>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            {editingTestCase === testCase.id ? (
+                        {['approved', 'rejected'].includes(String(testCase.status)) ? (
+                            <div className="text-xs font-medium ${testCase.status === 'approved' ? 'text-green-700' : 'text-red-700'}">
+                                {testCase.status === 'approved' ? 'Approved' : 'Rejected'}
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-2">
+                                {editingTestCase === testCase.id ? (
+                                    <>
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                        >
+                                            Save
+                                        </button>
+                                        <button
+                                            onClick={handleCancelEdit}
+                                            className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => handleEdit(testCase)}
+                                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => onApprove(testCase.id)}
+                                            className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                            disabled={testCase.status === ('approved' as any)}
+                                        >
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => onReject(testCase.id)}
+                                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                                            disabled={testCase.status === ('rejected' as any)}
+                                        >
+                                            Reject
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Test Case Content (hidden/minimized if approved) */}
+                    {/* Collapsible content logic */}
+                    {['approved', 'rejected'].includes(String(testCase.status)) ? (
+                        <div className="p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`text-sm font-medium ${testCase.status === 'approved' ? 'text-green-700' : 'text-red-700'}`}>Status: {testCase.status}</span>
+                                <button
+                                    onClick={() => toggleCollapse(testCase.id)}
+                                    className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+                                >
+                                    {collapsed[testCase.id] ? 'Expand' : 'Collapse'}
+                                </button>
+                            </div>
+                            {!collapsed[testCase.id] && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900 mb-2">{testCase.title}</h4>
+                                        <p className="text-gray-700 text-sm mb-4">{testCase.description}</p>
+                                    </div>
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Preconditions:</h5>
+                                        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                            {testCase.preconditions.map((precondition, index) => (
+                                                <li key={index}>{precondition}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Test Steps:</h5>
+                                        <div className="space-y-3">
+                                            {testCase.steps.map((step, index) => (
+                                                <div key={index} className="border-l-4 border-blue-200 pl-4">
+                                                    <div className="text-sm">
+                                                        <span className="font-medium text-gray-900">Step {step.step}:</span>
+                                                        <span className="ml-2 text-gray-700">{step.action}</span>
+                                                    </div>
+                                                    <div className="text-sm text-gray-700 mt-1">
+                                                        <span className="font-medium">Expected:</span>
+                                                        <span className="ml-2">{step.expectedResult}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Overall Expected Result:</h5>
+                                        <p className="text-sm text-gray-700">{testCase.expectedResult}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="p-4 space-y-4">
+                            {editingTestCase === testCase.id && editedTestCase ? (
                                 <>
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                                    >
-                                        Save
-                                    </button>
-                                    <button
-                                        onClick={handleCancelEdit}
-                                        className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                                    >
-                                        Cancel
-                                    </button>
+                                    {/* Editable Title */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editedTestCase.title}
+                                            onChange={(e) => updateEditedTestCase('title', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
+                                            placeholder="Enter test case title"
+                                        />
+                                    </div>
+
+                                    {/* Editable Description */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Description
+                                        </label>
+                                        <textarea
+                                            value={editedTestCase.description}
+                                            onChange={(e) => updateEditedTestCase('description', e.target.value)}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
+                                            placeholder="Enter test case description"
+                                        />
+                                    </div>
+
+                                    {/* Editable Preconditions */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Preconditions
+                                        </label>
+                                        <textarea
+                                            value={editedTestCase.preconditions.join('\n')}
+                                            onChange={(e) => updateEditedTestCase('preconditions', e.target.value.split('\n').filter(p => p.trim()))}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
+                                            placeholder="Enter each precondition on a new line"
+                                        />
+                                    </div>
+
+                                    {/* Editable Steps */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Test Steps
+                                            </label>
+                                            <button
+                                                onClick={addStep}
+                                                className="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                            >
+                                                Add Step
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {editedTestCase.steps.map((step, index) => (
+                                                <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-sm font-medium text-gray-700">
+                                                            Step {step.step}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => removeStep(index)}
+                                                            className="text-red-600 hover:text-red-800 text-sm"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <label className="block text-xs text-gray-700 mb-1">
+                                                                Action
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={step.action}
+                                                                onChange={(e) => updateStep(index, 'action', e.target.value)}
+                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
+                                                                placeholder="Enter test step action"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs text-gray-700 mb-1">
+                                                                Expected Result
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={step.expectedResult}
+                                                                onChange={(e) => updateStep(index, 'expectedResult', e.target.value)}
+                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
+                                                                placeholder="Enter expected result"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <button
-                                        onClick={() => handleEdit(testCase)}
-                                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => onApprove(testCase.id)}
-                                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                                        disabled={testCase.status === 'approved'}
-                                    >
-                                        Approve
-                                    </button>
-                                    <button
-                                        onClick={() => onReject(testCase.id)}
-                                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                                        disabled={testCase.status === 'rejected'}
-                                    >
-                                        Reject
-                                    </button>
+                                    {/* Read-only view */}
+                                    <div>
+                                        <h4 className="font-medium text-gray-900 mb-2">{testCase.title}</h4>
+                                        <p className="text-gray-700 text-sm mb-4">{testCase.description}</p>
+                                    </div>
+
+                                    {/* Preconditions */}
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Preconditions:</h5>
+                                        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                            {testCase.preconditions.map((precondition, index) => (
+                                                <li key={index}>{precondition}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    {/* Test Steps */}
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Test Steps:</h5>
+                                        <div className="space-y-3">
+                                            {testCase.steps.map((step, index) => (
+                                                <div key={index} className="border-l-4 border-blue-200 pl-4">
+                                                    <div className="text-sm">
+                                                        <span className="font-medium text-gray-900">
+                                                            Step {step.step}:
+                                                        </span>
+                                                        <span className="ml-2 text-gray-700">{step.action}</span>
+                                                    </div>
+                                                    <div className="text-sm text-gray-700 mt-1">
+                                                        <span className="font-medium">Expected:</span>
+                                                        <span className="ml-2">{step.expectedResult}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Expected Result */}
+                                    <div>
+                                        <h5 className="font-medium text-gray-900 mb-2">Overall Expected Result:</h5>
+                                        <p className="text-sm text-gray-700">{testCase.expectedResult}</p>
+                                    </div>
+
+                                    {/* Metadata */}
+                                    <div className="flex items-center space-x-4 text-sm text-gray-700 pt-4 border-t">
+                                        <span>Priority: {testCase.priority}</span>
+                                        <span>Linked: {testCase.linkedTicket}</span>
+                                        {/* Labels removed per request */}
+                                    </div>
                                 </>
                             )}
                         </div>
-                    </div>
-
-                    {/* Test Case Content */}
-                    <div className="p-4 space-y-4">
-                        {editingTestCase === testCase.id && editedTestCase ? (
-                            <>
-                                {/* Editable Title */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editedTestCase.title}
-                                        onChange={(e) => updateEditedTestCase('title', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
-                                        placeholder="Enter test case title"
-                                    />
-                                </div>
-
-                                {/* Editable Description */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        value={editedTestCase.description}
-                                        onChange={(e) => updateEditedTestCase('description', e.target.value)}
-                                        rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
-                                        placeholder="Enter test case description"
-                                    />
-                                </div>
-
-                                {/* Editable Preconditions */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Preconditions
-                                    </label>
-                                    <textarea
-                                        value={editedTestCase.preconditions.join('\n')}
-                                        onChange={(e) => updateEditedTestCase('preconditions', e.target.value.split('\n').filter(p => p.trim()))}
-                                        rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
-                                        placeholder="Enter each precondition on a new line"
-                                    />
-                                </div>
-
-                                {/* Editable Steps */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-sm font-medium text-gray-700">
-                                            Test Steps
-                                        </label>
-                                        <button
-                                            onClick={addStep}
-                                            className="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                                        >
-                                            Add Step
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {editedTestCase.steps.map((step, index) => (
-                                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-medium text-gray-700">
-                                                        Step {step.step}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => removeStep(index)}
-                                                        className="text-red-600 hover:text-red-800 text-sm"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <label className="block text-xs text-gray-700 mb-1">
-                                                            Action
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={step.action}
-                                                            onChange={(e) => updateStep(index, 'action', e.target.value)}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
-                                                            placeholder="Enter test step action"
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-xs text-gray-700 mb-1">
-                                                            Expected Result
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={step.expectedResult}
-                                                            onChange={(e) => updateStep(index, 'expectedResult', e.target.value)}
-                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 placeholder:text-gray-600"
-                                                            placeholder="Enter expected result"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                {/* Read-only view */}
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">{testCase.title}</h4>
-                                    <p className="text-gray-700 text-sm mb-4">{testCase.description}</p>
-                                </div>
-
-                                {/* Preconditions */}
-                                <div>
-                                    <h5 className="font-medium text-gray-900 mb-2">Preconditions:</h5>
-                                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                                        {testCase.preconditions.map((precondition, index) => (
-                                            <li key={index}>{precondition}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Test Steps */}
-                                <div>
-                                    <h5 className="font-medium text-gray-900 mb-2">Test Steps:</h5>
-                                    <div className="space-y-3">
-                                        {testCase.steps.map((step, index) => (
-                                            <div key={index} className="border-l-4 border-blue-200 pl-4">
-                                                <div className="text-sm">
-                                                    <span className="font-medium text-gray-900">
-                                                        Step {step.step}:
-                                                    </span>
-                                                    <span className="ml-2 text-gray-700">{step.action}</span>
-                                                </div>
-                                                <div className="text-sm text-gray-700 mt-1">
-                                                    <span className="font-medium">Expected:</span>
-                                                    <span className="ml-2">{step.expectedResult}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Expected Result */}
-                                <div>
-                                    <h5 className="font-medium text-gray-900 mb-2">Overall Expected Result:</h5>
-                                    <p className="text-sm text-gray-700">{testCase.expectedResult}</p>
-                                </div>
-
-                                {/* Metadata */}
-                                <div className="flex items-center space-x-4 text-sm text-gray-700 pt-4 border-t">
-                                    <span>Priority: {testCase.priority}</span>
-                                    <span>Linked: {testCase.linkedTicket}</span>
-                                    {testCase.labels.length > 0 && (
-                                        <div className="flex items-center space-x-1">
-                                            <span>Labels:</span>
-                                            {testCase.labels.map((label, index) => (
-                                                <span key={index} className="px-2 py-1 bg-gray-100 rounded text-xs">
-                                                    {label}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    )}
                 </div>
             ))}
         </div>
