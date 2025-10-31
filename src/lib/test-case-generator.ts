@@ -103,7 +103,6 @@ export interface TestCase {
     acceptanceCriteria: string[];
     expectedResult: string;
     priority: string;
-    labels: string[];
     linkedTicket: string;
     status: string;
     assignee?: string;
@@ -114,151 +113,7 @@ export interface TestCase {
 }
 
 // Mock data for development
-export const mockTickets: JiraTicket[] = [
-    {
-        key: 'MTO-1842',
-        summary: '[MTO][Prepress Backoffice] Non-MVP - Saved filters for prepress seniors',
-        description: `Feature: Saved filters for prepress seniors
-
-As a prepress senior
-I want to save my frequently used filters
-So that I can quickly apply them without reconfiguring each time
-
-Background:
-Given I am logged in as a prepress senior
-And I have access to the prepress backoffice system
-
-Scenario: Save a new filter
-Given I am on the filter configuration page
-When I configure search criteria with specific parameters
-And I click "Save Filter" button
-And I enter a filter name "My Daily Tasks"
-Then the filter should be saved successfully
-And I should see "Filter saved successfully" message
-And the filter should appear in my saved filters list
-
-Scenario: Apply saved filter
-Given I have at least one saved filter named "My Daily Tasks"
-When I navigate to the main prepress page
-And I select "My Daily Tasks" from saved filters dropdown
-Then the filter should be applied automatically
-And I should see only tasks matching the saved criteria
-And the filter name should be displayed as active`,
-        issueType: 'Story',
-        priority: 'Medium',
-        status: 'To Do',
-        assignee: 'John Doe',
-        labels: ['prepress', 'backoffice', 'filters'],
-        components: ['Prepress Module'],
-        customFields: {}
-    },
-    {
-        key: 'MTO-1843',
-        summary: '[MTO][Frontend] Fix responsive layout issues on mobile devices',
-        description: `Bug: Mobile layout breaks on small screens
-
-Steps to reproduce:
-1. Open the application on mobile device
-2. Navigate to dashboard
-3. Observe layout issues
-
-Expected: Layout should be responsive
-Actual: Elements overflow and break layout`,
-        issueType: 'Bug',
-        priority: 'High',
-        status: 'In Progress',
-        assignee: 'Jane Smith',
-        labels: ['frontend', 'mobile', 'responsive'],
-        components: ['Frontend'],
-        customFields: {}
-    },
-    {
-        key: 'MTO-1844',
-        summary: '[MTO][API] Implement user authentication endpoints',
-        description: `Task: Create authentication API endpoints
-
-As a backend developer
-I want to implement secure authentication endpoints
-So that users can safely log in and access protected resources
-
-Acceptance Criteria:
-* POST /auth/login endpoint accepts email and password, returns JWT token
-* POST /auth/logout endpoint invalidates the user session
-* POST /auth/refresh endpoint refreshes expired tokens with valid refresh token
-* GET /auth/profile endpoint returns current user information for authenticated users
-* All endpoints include proper error handling and status codes
-* Rate limiting is implemented to prevent brute force attacks
-* Input validation prevents injection attacks
-* Passwords are properly hashed using bcrypt
-* JWT tokens expire after 1 hour, refresh tokens after 7 days
-
-Technical Notes:
-* Use bcrypt with salt rounds of 12 for password hashing
-* Implement JWT with RS256 algorithm for better security
-* Add request rate limiting (5 attempts per minute for login)
-* Include CORS headers for frontend integration
-* Log all authentication attempts for security monitoring
-
-Data Requirements:
-* User email (required, valid email format)
-* User password (required, minimum 8 characters)
-* Device information for session tracking
-* IP address for security logging`,
-        issueType: 'Task',
-        priority: 'High',
-        status: 'To Do',
-        assignee: 'Mike Johnson',
-        labels: ['api', 'authentication', 'security'],
-        components: ['Backend API'],
-        customFields: {}
-    },
-    {
-        key: 'MTO-1845',
-        summary: '[MTO] Simple task without detailed description',
-        description: `Update database schema for new feature.`,
-        issueType: 'Task',
-        priority: 'Low',
-        status: 'To Do',
-        assignee: 'Sarah Wilson',
-        labels: ['database', 'schema'],
-        components: ['Database'],
-        customFields: {}
-    },
-    {
-        key: 'MTO-1941',
-        summary: '[MTO] Remove leading 0 from order numbers',
-        description: `We should remove the leading 0 from all order numbers
-
-So instead of "0700000039" it should be 
-
-"700000039"
-
-Used in the following places:
-
-Backoffice portal
-
-Order Details Page header
-
-Order Details Page below header
-
-Order Overview Page (Order ID table column)
-
-CH 
-
-Order title section
-
-V2
-
-Thank you page`,
-        issueType: 'Task',
-        priority: 'Medium',
-        status: 'To Do',
-        assignee: 'John Smith',
-        labels: ['frontend', 'formatting'],
-        components: ['Frontend', 'Backoffice'],
-        customFields: {}
-    }
-];
+// mockTickets moved to separate file `mock-tickets.ts` to reduce bundle size and decouple generator logic.
 
 // Enhanced Content-Aware parser for real ticket analysis
 export class ContentAwareParser {
@@ -1114,8 +969,8 @@ export class ContentAwareParser {
 
             // Create ONE combined test case
             scenarios.push({
-                title: explicitScenarios.length === 1 
-                    ? explicitScenarios[0].title 
+                title: explicitScenarios.length === 1
+                    ? explicitScenarios[0].title
                     : `${userStory.userRole} can ${userStory.goal}`,
                 userRole: userStory.userRole || 'customer',
                 type: 'gherkin',
@@ -2056,92 +1911,7 @@ export class ContentAwareParser {
         return steps;
     }
 
-    // Enhanced label generation based on components, patterns, and content analysis
-    generateEnhancedLabels(ticket: JiraTicket, scenario: TestScenario, components: string[], patterns: string[]): string[] {
-        const labels = new Set<string>();
-
-        // Base labels from ticket
-        ticket.labels.forEach(label => labels.add(label));
-
-        // Test type labels
-        labels.add(`${scenario.type}-test`);
-        labels.add(ticket.issueType.toLowerCase());
-
-        // Role-specific labels
-        labels.add(`role-${scenario.userRole}`);
-
-        // Component-specific labels
-        components.forEach(component => {
-            const componentLabel = component.toLowerCase().replace(/\s+/g, '-');
-            labels.add(componentLabel);
-        });
-
-        // Pattern-specific labels
-        patterns.forEach(pattern => {
-            labels.add(pattern);
-        });
-
-        // Content-specific labels based on patterns
-        if (patterns.includes('order-management')) {
-            labels.add('order-lifecycle');
-            labels.add('order-workflow');
-        }
-
-        if (patterns.includes('product-configuration')) {
-            labels.add('configurator');
-            labels.add('product-config');
-        }
-
-        if (patterns.includes('proof-workflow')) {
-            labels.add('proof-approval');
-            labels.add('workflow');
-        }
-
-        if (patterns.includes('cross-component-navigation')) {
-            labels.add('navigation');
-            labels.add('cross-component');
-        }
-
-        if (patterns.includes('role-based-access')) {
-            labels.add('access-control');
-            labels.add('permissions');
-        }
-
-        // Role-based component access labels
-        if (scenario.userRole === 'prepress') {
-            labels.add('backoffice');
-            labels.add('administrative');
-        } else if (scenario.userRole === 'customer-care') {
-            labels.add('customer-support');
-            labels.add('customer-assistance');
-        } else if (scenario.userRole === 'customer') {
-            labels.add('customer-facing');
-            labels.add('end-user');
-        }
-
-        // Functional area labels
-        if (components.includes('Configurator')) {
-            labels.add('product-configuration');
-        }
-        if (components.includes('Communication History')) {
-            labels.add('order-history');
-            labels.add('communication');
-        }
-        if (components.includes('Order Activity')) {
-            labels.add('order-tracking');
-            labels.add('activity-monitoring');
-        }
-        if (components.includes('Backoffice Portal')) {
-            labels.add('admin-portal');
-            labels.add('backend-management');
-        }
-        if (components.includes('Thank You Page')) {
-            labels.add('order-confirmation');
-            labels.add('success-page');
-        }
-
-        return Array.from(labels);
-    }
+    // generateEnhancedLabels removed (labels feature dropped)
 }
 
 // Enhanced test case generator with real content analysis
@@ -2189,7 +1959,6 @@ export function generateTestCases(ticket: JiraTicket): TestCase[] {
                 ? scenario.steps[scenario.steps.length - 1].expectedResult
                 : 'All acceptance criteria are met',
             priority: ticket.priority,
-            labels: contentParser.generateEnhancedLabels(ticket, scenario, components, patterns),
             linkedTicket: ticket.key,
             status: 'pending',
             assignee: ticket.assignee,
@@ -2237,7 +2006,6 @@ function generateFallbackTestCase(ticket: JiraTicket, components: string[], patt
         acceptanceCriteria: ['Functionality works as described in ticket'],
         expectedResult: 'All requirements from the ticket are fulfilled',
         priority: ticket.priority,
-        labels: contentParser.generateEnhancedLabels(ticket, mockScenario, components, patterns),
         linkedTicket: ticket.key,
         status: 'pending',
         assignee: ticket.assignee,

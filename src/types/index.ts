@@ -25,8 +25,8 @@ export interface TestCase {
     steps: TestStep[];
     expectedResult: string;
     priority: string;
-    labels: string[];
     linkedTicket: string;
+    // Status lifecycle: pending (initial) -> approved | rejected; 'draft' reserved for manual edits if introduced later.
     status?: 'pending' | 'approved' | 'rejected' | 'draft';
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getJiraClient, isJiraConfigured } from '@/lib/jira-config'
-import { mockTickets } from '@/lib/test-case-generator'
+import { mockTickets } from '@/lib/mock-tickets'
 
 export async function GET() {
     try {
